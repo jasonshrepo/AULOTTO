@@ -5,6 +5,7 @@ This script is suitable to generate games for NSW lotto, including:
   - Saturday Lotto
   
 Usage: test [options]
+    
     -g, --game number                ticket number
     
     -t, --type number                game type
