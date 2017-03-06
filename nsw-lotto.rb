@@ -7,6 +7,17 @@
 ####    written by: Jason Shen     ####
 #######################################
 
+
+# Game Guide
+#
+# Power Ball:           6 in 40 pluse 1 in 20
+# OZ Lotto:             7 in 45 
+# Monday Lotto:         6 in 45
+# Wensday Lotto:        6 in 45
+# Saturday Lotto:       6 in 45
+# The Pools:            6 in 38
+
+
 require 'optparse'
 
 class LottoDraw
@@ -40,7 +51,12 @@ class LottoDraw
   # power ball: main number -> six balls, powerball number -> 1 number
   # first draw the six balls in (1..15), (16..29), (30..45), two numbers in each range,
   # then draw powerball number in (1..20)
-    draw_range = [[1, 15], [16, 29], [30, 45]]
+    origin_draw_range = [[1, 15], [16, 29], [30, 45]]
+  # get range weight
+    range_weight = rand(2..3)
+    if range_weight == 2
+      draw_range = []
+      draw_range = origin_draw_range.sample(range_weight)
     powerball_range = [1, 20]
     main_number = 6
     each_range_round_for_main = 2
