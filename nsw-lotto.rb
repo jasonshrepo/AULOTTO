@@ -36,7 +36,7 @@ class LottoDraw
         @game = game.to_i
       end
 
-      opts.on("-t", "--type number", "game type") do |type|
+      opts.on("-t", "--type number", "game type, 1:powerball, 2:monday/wednsday/saturday lotto, any number: ozlotto(default lotto)") do |type|
         @playtype[0] = type.to_i
       end
 
