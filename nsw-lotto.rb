@@ -77,6 +77,7 @@ class LottoDraw
     puts "powerball_main_number: #{powerball_main_number}" if @debug
     powerball_pb_number = ((1..20).to_a - powerball_main_number).sample(1)
     puts "powerball main number: #{powerball_main_number.sort}, powerball number: #{powerball_pb_number}"
+    return "powerball main number: #{powerball_main_number.sort}, powerball number: #{powerball_pb_number}"
   end
 
 
@@ -96,6 +97,7 @@ class LottoDraw
     puts "rest_draw_range: #{rest_draw_range}" if @debug
     lotto_number += (rest_draw_range[0]..rest_draw_range[1]).to_a.sample(rest_weight)
     puts "saturday lotto main number: #{lotto_number.sort}"
+    return  "saturday lotto main number: #{lotto_number.sort}"
   end
 
   def ozlotto
@@ -110,33 +112,40 @@ class LottoDraw
     puts "oz lotto main number: #{lotto_number}" if @debug
     lotto_number += ((1..45).to_a - lotto_number).sample(1)
     puts "oz lotto main number: #{lotto_number.sort}"
+    return "oz lotto main number: #{lotto_number.sort}"
   end
 
   def gettickets
+    result = []
     if @playtype.include?(1)
       puts "This is a Power Ball draw"
       i = 1
       until i > @game
         i += 1
-        powerball
+        result += [powerball]
       end
     elsif @playtype.include?(2)
       puts "This is a Saturday Lotto draw"
       i = 1
       until i > @game
         i += 1
-        satlotto
+        result += [satlotto]
       end
     else
       puts "This is a OZ Lotto draw"
       i = 1
       until i > @game
         i += 1
-        ozlotto
+        result += [ozlotto]
       end
     end
+    puts "result: #{result}" if @debug
+    %x(date >> lotto-result.txt)
+    result.each do |x|
+      %x(echo #{x} >> lotto-result.txt)
+    end
+    %x(echo "\r" >> lotto-result.txt)
   end
-
 end
 
 
