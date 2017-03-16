@@ -57,7 +57,7 @@ class LottoDraw
   # every time, pick up two from the array
   # generate a number pool, rand pick number from the pool
     main_number = 6 
-    origin_draw_range = [[1, 15], [16, 29], [30, 45]]
+    origin_draw_range = [[1, 15], [16, 29], [30, 40]]
     picked_draw_range = origin_draw_range.sample(2)
     puts "picked draw range: #{picked_draw_range}" if @debug
     weight = rand(1..5)
