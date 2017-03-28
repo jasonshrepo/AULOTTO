@@ -47,6 +47,17 @@ class LottoDraw
     opt_parser.parse(args)
   end
 
+  def adjacent_check(numbers)
+    result = numbers.inject([]) { |l, e| (!l==[]&&l[-1][-1]+1==e)?l[0..-2]+[l[-1]+[e]]:l+[[e]]}
+    puts result if @debug
+    if result.inject{|memo, array| memo.length>array.length ? memo : array}.length>=4
+      puts result
+      return false
+    else
+      return true
+    end
+  end
+
   def powerball
   # power ball: main number -> six balls, powerball number -> 1 number
   # power ball may have awkward result, like this real draw result: 
@@ -76,8 +87,12 @@ class LottoDraw
     powerball_main_number += (rest_draw_range[0]..rest_draw_range[1]).to_a.sample(rest_weight)
     puts "powerball_main_number: #{powerball_main_number}" if @debug
     powerball_pb_number = ((1..20).to_a - powerball_main_number).sample(1)
-    puts "powerball main number: #{powerball_main_number.sort}, powerball number: #{powerball_pb_number}"
-    return "powerball main number: #{powerball_main_number.sort}, powerball number: #{powerball_pb_number}"
+    if adjacent_check(powerball_main_number.sort)
+      puts "powerball main number: #{powerball_main_number.sort}, powerball number: #{powerball_pb_number}"
+      return "powerball main number: #{powerball_main_number.sort}, powerball number: #{powerball_pb_number}"
+    else
+      powerball
+    end
   end
 
 
