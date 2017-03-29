@@ -9,7 +9,6 @@
 
 
 # Game Guide
-#
 # Power Ball:           6 in 40 pluse 1 in 20
 # OZ Lotto:             7 in 45 
 # Monday Lotto:         6 in 45
@@ -77,16 +76,26 @@ class LottoDraw
     draw_main = @draw_main
     draw_sup = @draw_sup
     main_result = pool_main.sample(draw_main).sort
+    sleep rand(1..5)
     sup_result =  pool_sup.sample(draw_sup).sort if !pool_sup.empty?
-    puts "drawed main numbers are: #{main_result}, drawed sup numbers are: #{sup_result if sup_result}\n\n"
-    %x(echo "drawed main numbers are: #{main_result}, drawed sup numbers are: #{sup_result if sup_result}" >> lotto-result.txt) if !@debug
-    %x(echo "\r" >> lotto-result.txt) if !@debug
+    sleep rand(1..5)
+    main_inc_sup = main_result.include?(sup_result[0]) if sup_result
+    puts "main: #{main_result}" if @debug
+    puts "sup: #{sup_result}" if @debug
+    puts "re-roll" if main_inc_sup and @debug
+    if main_inc_sup
+      draw_numbers
+    else    
+      puts "drawed main numbers are: #{main_result}, drawed sup numbers are: #{sup_result if sup_result}\n\n"
+      %x(echo "drawed main numbers are: #{main_result}, drawed sup numbers are: #{sup_result if sup_result}" >> lotto-result.txt) if !@debug
+      %x(echo "\r" >> lotto-result.txt) if !@debug
+    end
   end
 
   def gettickets
     %x(date >> lotto-result.txt) if !@debug
     pool_sort
-    (1..@game).each {draw_numbers }
+    (1..@game).each { sleep rand(1..5); draw_numbers; sleep rand(1..5) }
   end
 end
 
