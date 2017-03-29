@@ -50,15 +50,51 @@ class LottoDraw
     opt_parser.parse(args)
   end
 
-  def adjacent_check(numbers)
-    result = numbers.inject([]) { |l, e| (!l==[]&&l[-1][-1]+1==e)?l[0..-2]+[l[-1]+[e]]:l+[[e]]}
-    puts result if @debug
-    if result.inject{|memo, array| memo.length>array.length ? memo : array}.length>=4
-      puts result
-      return false
-    else
-      return true
+  def high_adjacent_check(numbers)
+    hashmap = numbers
+    for i in (0..numbers.length-1) 
+      puts "test number: #{numbers[i]}" if @debug
+      count = 0
+      adj_numbers = (numbers[i]+1..numbers[i]+3).to_a
+      puts "adj numbers: #{adj_numbers}" if @debug
+      adj_numbers.each do |a|
+        puts "adj test number: #{a}" if @debug
+        if hashmap.include?(a)
+          count += 1
+        end
+      end
+      puts "count: #{count}" if @debug
+      puts "hashmap: #{hashmap}" if @debug
+      if count > 2
+        puts "high check return true" if @debug
+        return true
+      end
     end
+    puts "hight check return false" if @debug
+    return false
+  end
+
+  def low_adjacent_check(numbers)
+    hashmap = numbers
+    for i in (0..numbers.length-1)
+      puts "test number: #{numbers[i]}" if @debug
+      count = 0
+      adj_numbers = (numbers[i]-3..numbers[i]-1).to_a
+      puts "adj numbers: #{adj_numbers}" if @debug
+      adj_numbers.each do |a|
+        if hashmap.include?(a)
+          count += 1
+        end
+      end
+      puts "count: #{count}" if @debug
+      puts "hashmap: #{hashmap}" if @debug
+      if count > 2
+        puts "low check return true" if @debug
+        return true
+      end
+    end
+    puts "low check return false" if @debug
+    return false
   end
 
   def pool_sort
@@ -75,19 +111,22 @@ class LottoDraw
     puts "sup pool: #{pool_sup}" if @debug
     draw_main = @draw_main
     draw_sup = @draw_sup
-    main_result = pool_main.sample(draw_main).sort
+    main_result = pool_main.sample(draw_main)
     sleep rand(1..5)
-    sup_result =  pool_sup.sample(draw_sup).sort if !pool_sup.empty?
+    sup_result =  pool_sup.sample(draw_sup) if !pool_sup.empty?
     sleep rand(1..5)
     main_inc_sup = main_result.include?(sup_result[0]) if sup_result
     puts "main: #{main_result}" if @debug
     puts "sup: #{sup_result}" if @debug
-    puts "re-roll" if main_inc_sup and @debug
     if main_inc_sup
+      puts "main numbers include sup numbers, re-roll" if @debug
       draw_numbers
-    else    
-      puts "drawed main numbers are: #{main_result}, drawed sup numbers are: #{sup_result if sup_result}\n\n"
-      %x(echo "drawed main numbers are: #{main_result}, drawed sup numbers are: #{sup_result if sup_result}" >> lotto-result.txt) if !@debug
+    elsif high_adjacent_check(main_result) or low_adjacent_check(main_result)
+      puts "high and low adjacent check failed, re-roll" if @debug
+      draw_numbers
+    else
+      puts "drawed main numbers are: #{main_result.sort}, drawed sup numbers are: #{sup_result.sort if sup_result}\n\n"
+      %x(echo "drawed main numbers are: #{main_result.sort}, drawed sup numbers are: #{sup_result.sort if sup_result}" >> lotto-result.txt) if !@debug
       %x(echo "\r" >> lotto-result.txt) if !@debug
     end
   end
@@ -95,7 +134,7 @@ class LottoDraw
   def gettickets
     %x(date >> lotto-result.txt) if !@debug
     pool_sort
-    (1..@game).each { sleep rand(1..5); draw_numbers; sleep rand(1..5) }
+    (1..@game).each { sleep rand(1..5);  draw_numbers; sleep rand(1..5)  }
   end
 end
 
