@@ -24,8 +24,12 @@ class LottoDraw
 
   def initialize
     @game = 1
-    @playtype = [0]
+    @playtype = 0
     @debug = false
+    @pool_main = []
+    @pool_sup = []
+    @draw_main = 0
+    @draw_sup = 0
   end
 
   def parse_command_line(args)
@@ -36,8 +40,8 @@ class LottoDraw
         @game = game.to_i
       end
 
-      opts.on("-t", "--type number", "game type, 1:powerball, 2:monday/wednsday/saturday lotto, any number: ozlotto(default lotto)") do |type|
-        @playtype[0] = type.to_i
+      opts.on("-t", "--type number", "game type, 1:powerball, 2: ozlotto, else:monday/wednesday/saturday lotto" ) do |type|
+        @playtype = type.to_i
       end
 
       opts.on("-d", "--debug", "debug mode") do |debug|
@@ -58,58 +62,32 @@ class LottoDraw
     end
   end
 
-  def powerball
-  # power ball: main number -> six balls, powerball number -> 1 number
-  # power ball may have awkward result, like this real draw result: 
-  # 25,36,30,9,34,40, p: 11
-  # 19,26,9,29,27,6,  p: 15
-  # 20,29,1,16,15,26, p: 12
-  # so, our splitted arry of numbers is quite interesting
-  # every time, pick up two from the array
-  # generate a number pool, rand pick number from the pool
-    target_number = 6
-    main_draw_number = []
-    origin_draw_range = [[1, 10], [11, 19], [20, 29], [30, 40]]
-    weight = 0
-    while target_number - weight > 0
-      puts "origin draw range: #{origin_draw_range}" if @debug
-      number = 6
-      while number == 6
-        number = rand(1..(target_number - weight))
-      end
-      puts "number: #{number}" if @debug
-      picked_range = origin_draw_range.sample(1)
-      puts "picked range: #{picked_range}" if @debug
-      rand_number = []
-      until rand_number != [] and rand_number.length == rand_number.uniq.length
-       rand_number += Array.new(number) { rand(picked_range[-1][0]..picked_range[-1][-1]) } 
-      end
-      puts "rand number: #{rand_number}" if @debug
-      main_draw_number += rand_number
-      puts "main draw number: #{main_draw_number}" if @debug
-      weight += number
-      puts "weight: #{weight}" if @debug
-      origin_draw_range -= picked_range
-    end
-    puts "main number: #{main_draw_number}"
+  def pool_sort
+    case @playtype
+    when 1 then @pool_main = (1..40).to_a;@pool_sup = (1..20).to_a;@draw_main = 6;@draw_sup = 1;puts "This is powerball lotto"; %x(echo "This is powerball lotto" >> lotto-result.txt)
+    when 2 then @pool_main = (1..45).to_a;@draw_main = 7;@draw_sup = 0; puts "This is OZLotto"; %x(echo "This is OZLotto" >> lotto-result.txt)
+    else @pool_main = (1..45).to_a;@draw_main = 6; @draw_sup = 0; puts "This is Monday/Wednesday/Saturday Lotto"; %x(echo "This is Monday/Wednesday/Saturday Lotto" >> lotto-result.txt) end
   end
 
-
-
-  def satlotto
-    draw_range = [[1, 23], [24, 45]]
-    main_number = 6
-  end
-
-  def ozlotto
-  # oz lotto: first draw the six balls in (1..15), (16..29), (30..45), two numbers in each range,
-  # the draw last number in one range again selected by dice
-    draw_range = [[1, 15], [16, 29], [30, 45]]
+  def draw_numbers
+    pool_main = @pool_main
+    pool_sup = @pool_sup
+    puts "main pool: #{pool_main}" if @debug
+    puts "sup pool: #{pool_sup}" if @debug
+    draw_main = @draw_main
+    draw_sup = @draw_sup
+    main_result = pool_main.sample(draw_main).sort
+    sup_result =  pool_sup.sample(draw_sup).sort if !pool_sup.empty?
+    puts "drawed main numbers are: #{main_result}, drawed sup numbers are: #{sup_result if sup_result}\n\n"
+    %x(echo "drawed main numbers are: #{main_result}, drawed sup numbers are: #{sup_result if sup_result}" >> lotto-result.txt)
+    %x(echo "\r" >> lotto-result.txt)
   end
 
   def gettickets
-    powerball
-  end  
+    %x(date >> lotto-result.txt)
+    pool_sort
+    (1..@game).each {draw_numbers }
+  end
 end
 
 
