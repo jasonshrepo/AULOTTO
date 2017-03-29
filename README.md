@@ -16,3 +16,9 @@ Usage: nsw-lotto [options]
     any other type number: OZ Lotto
     
 ruby nsw-lotto.rb -t 1 -g 1
+
+I am writing this script cause I want to combin the Ruby Learning with something interesting. 
+Gambling is not the purpose of this script and actually there is no secret algorithm for NSW lotto inside this script.
+All the number-pick-up things are handled by Ruby Standard Library.
+
+Good luck in playing NSW Lotto. Finger Crossed! Have Fun!
