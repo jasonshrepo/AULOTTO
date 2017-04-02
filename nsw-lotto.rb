@@ -29,6 +29,8 @@ class LottoDraw
     @pool_sup = []
     @draw_main = 0
     @draw_sup = 0
+    @sts_main = Array.new(45, 0)
+    @sts_sup = Array.new(20, 0)
   end
 
   def parse_command_line(args)
@@ -97,44 +99,60 @@ class LottoDraw
     return false
   end
 
-  def pool_sort
+  def lotto_type_print
     case @playtype
-    when 1 then @pool_main = (1..40).to_a;@pool_sup = (1..20).to_a;@draw_main = 6;@draw_sup = 1;puts "This is powerball lotto"; %x(echo "This is powerball lotto" >> lotto-result.txt) if !@debug
-    when 2 then @pool_main = (1..45).to_a;@draw_main = 7;@draw_sup = 0; puts "This is OZLotto"; %x(echo "This is OZLotto" >> lotto-result.txt) if !@debug
-    else @pool_main = (1..45).to_a;@draw_main = 6; @draw_sup = 0; puts "This is Monday/Wednesday/Saturday Lotto"; %x(echo "This is Monday/Wednesday/Saturday Lotto" >> lotto-result.txt) if !@debug end
+    when 1 then puts "This is powerball lotto"; %x(echo "This is powerball lotto" >> lotto-result.txt) if !@debug
+    when 2 then puts "This is OZLotto"; %x(echo "This is OZLotto" >> lotto-result.txt) if !@debug
+    else puts "This is Monday/Wednesday/Saturday Lotto"; %x(echo "This is Monday/Wednesday/Saturday Lotto" >> lotto-result.txt) if !@debug end
   end
 
   def draw_numbers
-    pool_main = @pool_main
-    pool_sup = @pool_sup
-    puts "main pool: #{pool_main}" if @debug
-    puts "sup pool: #{pool_sup}" if @debug
-    draw_main = @draw_main
-    draw_sup = @draw_sup
-    main_result = pool_main.sample(draw_main)
-    sleep rand(1..5)
-    sup_result =  pool_sup.sample(draw_sup) if !pool_sup.empty?
-    sleep rand(1..5)
-    main_inc_sup = main_result.include?(sup_result[0]) if sup_result
-    puts "main: #{main_result}" if @debug
-    puts "sup: #{sup_result}" if @debug
-    if main_inc_sup
-      puts "main numbers include sup numbers, re-roll" if @debug
-      draw_numbers
-    elsif high_adjacent_check(main_result) or low_adjacent_check(main_result)
-      puts "high and low adjacent check failed, re-roll" if @debug
+    case @playtype
+    when 1 then pool_main = (1..40).to_a;pool_sup = (1..20).to_a;draw_main = 6;draw_sup = 1;
+    when 2 then pool_main = (1..45).to_a;draw_main = 7;draw_sup = 0 
+    else pool_main = (1..45).to_a;draw_main = 6; draw_sup = 0 end
+    m = 0
+    main_result = []
+    while m < draw_main
+      l = pool_main.length
+      p = rand(1..(l-m))
+      main_result += [pool_main[p-1].to_i]
+      index = pool_main[p-1].to_i
+      @sts_main[index-1] += 1
+      pool_main[p-1] = pool_main[l-m-1]
+      m += 1
+    end
+    puts "main result: #{main_result}" if @debug
+    if pool_sup
+      s = 0
+      sup_result = 0
+      while s < draw_main or main_result.include?(sup_result) 
+        sup_result = 0
+        l = pool_sup.length
+        p = rand(1..(l-s))
+        sup_result = pool_sup[p-1].to_i
+        pool_sup[p-1] = pool_sup[l-s-1]
+        s += 1
+      end
+      index = sup_result
+      @sts_sup[index-1] += 1
+      puts "super ball: #{sup_result}" if @debug
+    end
+    if high_adjacent_check(main_result) or low_adjacent_check(main_result)
+     puts "high and low adjacent check failed, re-roll" if @debug
       draw_numbers
     else
-      puts "drawed main numbers are: #{main_result.sort}, drawed sup numbers are: #{sup_result.sort if sup_result}\n\n"
-      %x(echo "drawed main numbers are: #{main_result.sort}, drawed sup numbers are: #{sup_result.sort if sup_result}" >> lotto-result.txt) if !@debug
-      %x(echo "\r" >> lotto-result.txt) if !@debug
+     puts "drawed main numbers are: #{main_result.sort}, drawed sup numbers are: #{sup_result if sup_result}\n\n" if !@debug
+     %x(echo "drawed main numbers are: #{main_result.sort}, drawed sup numbers are: #{sup_result if sup_result}" >> lotto-result.txt) if !@debug
+     %x(echo "\r" >> lotto-result.txt) if !@debug
     end
-  end
+ end  
 
-  def gettickets
-    %x(date >> lotto-result.txt) if !@debug
-    pool_sort
-    (1..@game).each { sleep rand(1..5);  draw_numbers; sleep rand(1..5)  }
+ def gettickets
+   %x(date >> lotto-result.txt) if !@debug
+    lotto_type_print
+    (1..@game).each {  draw_numbers }
+    puts "main statistics: #{@sts_main}\nsup statistics: #@sts_sup"
   end
 end
 
