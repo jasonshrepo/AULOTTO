@@ -10,11 +10,13 @@ Usage: nsw-lotto [options]
     
     -t, --type number                game type, 1:powerball, 2:ozlotto, any number: monday/wednsday/saturday lotto
 
+    -m  --method number              method type, 1: all number used at least once, other: DEC method. default is 0
+
     -d, --debug                      debug mode  
     
 
 example:    
-ruby nsw-lotto.rb -t 1 -g 1
+ruby nsw-lotto.rb -t 1 -g 1 -m 1
 
 results are export to local-file: lotto-result.txt
 
