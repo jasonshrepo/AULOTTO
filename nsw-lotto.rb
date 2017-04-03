@@ -24,6 +24,7 @@ class LottoDraw
   def initialize
     @game = 1
     @playtype = 0
+    @method = 0
     @debug = false
     @pool_main = []
     @pool_sup = []
@@ -43,6 +44,10 @@ class LottoDraw
 
       opts.on("-t", "--type number", "game type, 1:powerball, 2: ozlotto, else:monday/wednesday/saturday lotto" ) do |type|
         @playtype = type.to_i
+      end
+  
+      opts.on("-m", "--method number", "method type, type 1: all number used, others: DEC method") do |method|
+        @method = method.to_i
       end
 
       opts.on("-d", "--debug", "debug mode") do |debug|
@@ -106,7 +111,63 @@ class LottoDraw
     else puts "This is Monday/Wednesday/Saturday Lotto"; %x(echo "This is Monday/Wednesday/Saturday Lotto" >> lotto-result.txt) if !@debug end
   end
 
-  def draw_numbers
+  def draw_numbers 
+    case @playtype
+    when 1 then pool_main = (1..40).to_a;pool_sup = (1..20).to_a;draw_main = 6;draw_sup = 1;
+    when 2 then pool_main = (1..45).to_a;draw_main = 7;draw_sup = 0 
+    else pool_main = (1..45).to_a;draw_main = 6; draw_sup = 0 end
+    major_rounds = pool_main.length / draw_main
+    length = pool_main.length
+    m = 0
+    result = {}
+    while m < major_rounds
+      n = 0
+      round = m + 1
+      result["round: #{round}"] = []
+      while n < draw_main
+        l = pool_main.length
+        p = rand(1..(l-1))
+        result["round: #{round}"] += [pool_main[p-1].to_i]
+        pool_main.delete(pool_main[p-1])
+        n += 1
+      end
+      if pool_sup
+        sup_result = 0
+        while sup_result == 0 or result["round: #{round}"].include?(sup_result)
+          l = pool_sup.length
+          p = rand(1..(l-1))
+          sup_result = pool_sup[p-1].to_i
+        end
+        pool_sup.delete(pool_sup[p-1])
+        result["round: #{round}"] += ["sup number: #{sup_result}"]
+      end
+      m += 1
+    end
+    round += 1
+    result["round: #{round}"] = pool_main
+    pool = (1..length).to_a - pool_main
+    number = draw_main - pool_main.length
+    n = 0
+    while n < number
+      l = pool.length
+      p = rand(1..(l-1))
+      result["round: #{round}"] += [pool[p-1].to_i]
+      pool.delete(pool[p-1])
+      n += 1
+    end
+    if pool_sup
+      sup_result = 0
+      while sup_result ==0 or result["round: #{round}"].include?(sup_result)
+        l = pool_sup.length
+        p = rand(1..(l-1))
+        sup_result = pool_sup[p-1].to_i
+      end
+      result["round: #{round}"] += ["sup number: #{sup_result}"]
+    end
+    result.each { |x| puts "draw result: #{x}" }   
+  end
+
+  def draw_numbers_1
     case @playtype
     when 1 then pool_main = (1..40).to_a;pool_sup = (1..20).to_a;draw_main = 6;draw_sup = 1;
     when 2 then pool_main = (1..45).to_a;draw_main = 7;draw_sup = 0 
@@ -139,19 +200,19 @@ class LottoDraw
       puts "super ball: #{sup_result}" if @debug
     end
     if high_adjacent_check(main_result) or low_adjacent_check(main_result)
-     puts "high and low adjacent check failed, re-roll" if @debug
+      puts "high and low adjacent check failed, re-roll" if @debug
       draw_numbers
     else
-     puts "drawed main numbers are: #{main_result.sort}, drawed sup numbers are: #{sup_result if sup_result}\n\n" if !@debug
-     %x(echo "drawed main numbers are: #{main_result.sort}, drawed sup numbers are: #{sup_result if sup_result}" >> lotto-result.txt) if !@debug
-     %x(echo "\r" >> lotto-result.txt) if !@debug
+      puts "drawed main numbers are: #{main_result.sort}, drawed sup numbers are: #{sup_result if sup_result}\n\n" if !@debug
+      %x(echo "drawed main numbers are: #{main_result.sort}, drawed sup numbers are: #{sup_result if sup_result}" >> lotto-result.txt) if !@debug
+      %x(echo "\r" >> lotto-result.txt) if !@debug
     end
- end  
+  end  
 
- def gettickets
-   %x(date >> lotto-result.txt) if !@debug
+  def gettickets
+    %x(date >> lotto-result.txt) if !@debug
     lotto_type_print
-    (1..@game).each {  draw_numbers }
+    @method == 1 ? (1..@game).each {  draw_numbers } : (1..@game).each { draw_numbers_1 }
     puts "main statistics: #{@sts_main}\nsup statistics: #@sts_sup"
   end
 end
