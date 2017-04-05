@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/home/jason/.rvm/rubies/ruby-2.3.3/bin/ruby
 #-*- coding: UTF-8 -*-
 
 #######################################
@@ -120,9 +120,9 @@ class LottoDraw
 
   def lotto_type_print
     case @playtype
-    when 1 then @lotto_type = "Power Ball"; puts "This is powerball lotto" if !@debug
-    when 2 then @lotto_type = "OZlotto"; puts "This is OZLotto" if !@debug
-    else puts @lotto_type = "Monday Wednesday Saturday Lotto"; "This is Monday/Wednesday/Saturday Lotto"; if !@debug end
+    when 1 then @lotto_type = "Power Ball"; puts "This is powerball lotto" if @debug
+    when 2 then @lotto_type = "OZlotto"; puts "This is OZLotto" if @debug
+    else @lotto_type = "Monday Wednesday Saturday Lotto"; puts "This is Monday/Wednesday/Saturday Lotto" if @debug end
   end
 
   def init_static
@@ -175,6 +175,7 @@ class LottoDraw
   end
 
   def point_path
+    Dir.chdir("/opt/project/AULOTTO")
     path = Dir.pwd
     blog_path = File.join(File.dirname(path), "blog","_posts")
     return blog_path
@@ -197,11 +198,6 @@ class LottoDraw
     f.puts "<br>"
     f.close
   end
-
-  def compile_blog(path)
-    Dir.chdir("#{File.dirname(path)}")
-    %x(jekyll build)
-  end
 end
 
 
@@ -210,4 +206,3 @@ draw.parse_command_line(ARGV)
 results = draw.gettickets
 path = draw.point_path
 draw.generate_lotto_blog(path)
-draw.compile_blog(path)
