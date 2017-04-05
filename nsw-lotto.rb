@@ -18,6 +18,8 @@
 
 
 require 'optparse'
+require 'yaml'
+
 
 class LottoDraw
 
@@ -27,11 +29,14 @@ class LottoDraw
     @method = 0
     @debug = false
     @pool_main = []
-    @pool_sup = []
+    @pool_supp = []
     @draw_main = 0
-    @draw_sup = 0
-    @sts_main = Array.new(45, 0)
-    @sts_sup = Array.new(20, 0)
+    @draw_supp = 0
+    @draw_pattern = []
+    @draw_result = []
+    @lotto_type = ""  
+    @sts_main = Array.new(45,0)
+    @sts_supp = Array.new
   end
 
   def parse_command_line(args)
@@ -103,117 +108,99 @@ class LottoDraw
     puts "low check return false" if @debug
     return false
   end
+  
+  def static_main(result)
+    result.flatten!
+    result.each { |x| @sts_main[x-1] += 1}
+  end
+
+  def static_supp(result)
+    @sts_supp[result-1] += 1
+  end
 
   def lotto_type_print
     case @playtype
-    when 1 then puts "This is powerball lotto"; %x(echo "This is powerball lotto" >> lotto-result.txt) if !@debug
-    when 2 then puts "This is OZLotto"; %x(echo "This is OZLotto" >> lotto-result.txt) if !@debug
-    else puts "This is Monday/Wednesday/Saturday Lotto"; %x(echo "This is Monday/Wednesday/Saturday Lotto" >> lotto-result.txt) if !@debug end
+    when 1 then @lotto_type = "Power Ball"; puts "This is powerball lotto" if !@debug
+    when 2 then @lotto_type = "OZlotto"; puts "This is OZLotto" if !@debug
+    else puts @lotto_type = "Monday Wednesday Saturday Lotto"; "This is Monday/Wednesday/Saturday Lotto"; if !@debug end
   end
 
-  def draw_numbers 
+  def init_static
     case @playtype
-    when 1 then pool_main = (1..40).to_a;pool_sup = (1..20).to_a;draw_main = 6;draw_sup = 1;
-    when 2 then pool_main = (1..45).to_a;draw_main = 7;draw_sup = 0 
-    else pool_main = (1..45).to_a;draw_main = 6; draw_sup = 0 end
-    major_rounds = pool_main.length / draw_main
-    length = pool_main.length
-    m = 0
-    result = {}
-    while m < major_rounds
-      n = 0
-      round = m + 1
-      result["round: #{round}"] = []
-      while n < draw_main
-        l = pool_main.length
-        p = rand(1..(l-1))
-        result["round: #{round}"] += [pool_main[p-1].to_i]
-        pool_main.delete(pool_main[p-1])
-        n += 1
-      end
-      if pool_sup
-        sup_result = 0
-        while sup_result == 0 or result["round: #{round}"].include?(sup_result)
-          l = pool_sup.length
-          p = rand(1..(l-1))
-          sup_result = pool_sup[p-1].to_i
+    when 1 then @sts_main=Array.new(40,0);@sts_supp=Array.new(20,0);
+    else @sts_main=Array.new(45,0) end
+  end
+  
+  def draw_numbers
+    case @playtype
+    when 1 then @main_pool = [(1..14).to_a, (15..27).to_a, (28..40).to_a];@supp_pool = (1..20).to_a;@draw_main = 6;@draw_supp = 1;
+    when 2 then @main_pool = [(1..15).to_a, (16..30).to_a, (31..45).to_a];@draw_main = 7;
+    else @main_pool = [(1..15).to_a, (16..30).to_a, (21..45).to_a];@draw_main = 6;end
+    @playtype.eql?(2)?@draw_pattern=[[2,4,1], [1,2,4], [2,1,4], [3,3,1], [1,3,3], [3,1,3], [4,2,1], [1,4,2], [4,1,2]]:@draw_pattern=[[4,1,1],[1,4,1],[1,1,4],[2,3,1],[1,2,3],[2,1,3],[3,2,1],[1,3,2],[3,1,2]]
+    puts "main pool: #@main_pool" if @debug
+    puts "supp pool: #@supp_pool" if !@supp_pool.nil? and @debug
+    puts "draw main: #@draw_main" if @debug
+    puts "draw supp: #@draw_supp" if !@draw_supp.eql?(0) and @debug
+    puts "draw_pattern: #@draw_pattern" if @debug
+    @draw_pattern.each do |pattern|
+      main_result = []
+      supp_result = 0
+      main_pool_index = 0
+      while main_pool_index < pattern.length
+        sub_main_pool = []
+        @main_pool[main_pool_index].each {|x| sub_main_pool += [x]}
+        p = 0
+        while p < pattern[main_pool_index].to_i
+          l = sub_main_pool.length
+          rand_index = rand(1..(l-p))
+          main_result += [sub_main_pool[(rand_index-1)].to_i]
+          sub_main_pool[rand_index-1] = sub_main_pool[(l-p-1)]
+          p += 1
         end
-        pool_sup.delete(pool_sup[p-1])
-        result["round: #{round}"] += ["sup number: #{sup_result}"]
+        main_pool_index += 1
       end
-      m += 1
+      supp_result = rand(1..@supp_pool.length) if !@supp_pool.nil?
+      static_main(main_result)
+      static_supp(supp_result) if !@supp_pool.nil?
+      @draw_result += [main_result]
+      @draw_result[-1] += ["Supplementary Number: #{supp_result}"] if !@supp_pool.nil?
     end
-    round += 1
-    result["round: #{round}"] = pool_main
-    pool = (1..length).to_a - pool_main
-    number = draw_main - pool_main.length
-    n = 0
-    while n < number
-      l = pool.length
-      p = rand(1..(l-1))
-      result["round: #{round}"] += [pool[p-1].to_i]
-      pool.delete(pool[p-1])
-      n += 1
-    end
-    if pool_sup
-      sup_result = 0
-      while sup_result ==0 or result["round: #{round}"].include?(sup_result)
-        l = pool_sup.length
-        p = rand(1..(l-1))
-        sup_result = pool_sup[p-1].to_i
-      end
-      result["round: #{round}"] += ["sup number: #{sup_result}"]
-    end
-    result.each { |x| puts "draw result: #{x}" }   
+    @draw_result.each {|x| puts "draw result: #{x}"} if @debug
   end
-
-  def draw_numbers_1
-    case @playtype
-    when 1 then pool_main = (1..40).to_a;pool_sup = (1..20).to_a;draw_main = 6;draw_sup = 1;
-    when 2 then pool_main = (1..45).to_a;draw_main = 7;draw_sup = 0 
-    else pool_main = (1..45).to_a;draw_main = 6; draw_sup = 0 end
-    m = 0
-    main_result = []
-    while m < draw_main
-      l = pool_main.length
-      p = rand(1..(l-m))
-      main_result += [pool_main[p-1].to_i]
-      index = pool_main[p-1].to_i
-      @sts_main[index-1] += 1
-      pool_main[p-1] = pool_main[l-m-1]
-      m += 1
-    end
-    puts "main result: #{main_result}" if @debug
-    if pool_sup
-      s = 0
-      sup_result = 0
-      while s < draw_main or main_result.include?(sup_result) 
-        sup_result = 0
-        l = pool_sup.length
-        p = rand(1..(l-s))
-        sup_result = pool_sup[p-1].to_i
-        pool_sup[p-1] = pool_sup[l-s-1]
-        s += 1
-      end
-      index = sup_result
-      @sts_sup[index-1] += 1
-      puts "super ball: #{sup_result}" if @debug
-    end
-    if high_adjacent_check(main_result) or low_adjacent_check(main_result)
-      puts "high and low adjacent check failed, re-roll" if @debug
-      draw_numbers
-    else
-      puts "drawed main numbers are: #{main_result.sort}, drawed sup numbers are: #{sup_result if sup_result}\n\n" if !@debug
-      %x(echo "drawed main numbers are: #{main_result.sort}, drawed sup numbers are: #{sup_result if sup_result}" >> lotto-result.txt) if !@debug
-      %x(echo "\r" >> lotto-result.txt) if !@debug
-    end
-  end  
 
   def gettickets
-    %x(date >> lotto-result.txt) if !@debug
     lotto_type_print
-    @method == 1 ? (1..@game).each {  draw_numbers } : (1..@game).each { draw_numbers_1 }
-    puts "main statistics: #{@sts_main}\nsup statistics: #@sts_sup"
+    init_static
+    (1..@game).each { draw_numbers }
+  end
+
+  def point_path
+    path = Dir.pwd
+    blog_path = File.join(File.dirname(path), "blog","_posts")
+    return blog_path
+  end
+  
+  def generate_lotto_blog(path)
+    file_name = "lotto_result"
+    file_time = Time.now.strftime "%Y-%m-%d"
+    file_ext = ".md"
+    file_full_name = file_time + "-" + file_name + file_ext
+    f = File.new("#{File.join(path, file_full_name)}", "w")
+    title = "---\nlayout: post\ntitle: '#{file_time}-#@lotto_type'\ndate: #{file_time}\ntag: lotto\n---\n\n"
+    f.puts title
+    f.puts "<br><br>This is NSW #@lotto_type Game.<br>\n"
+    @draw_result.each do |x| 
+      f.puts "<br>&emsp;&emsp;&emsp;Draw Result: Main Numbers: #{x}\n"
+    end
+    f.puts "<br><br> The script behind this is used to learn Ruby Scripting. <br>Gambling is not good for you and your love!\n<br>"
+    f.puts "<br>  Generate time: #{Time.now}"
+    f.puts "<br>"
+    f.close
+  end
+
+  def compile_blog(path)
+    Dir.chdir("#{File.dirname(path)}")
+    %x(jekyll build)
   end
 end
 
@@ -221,4 +208,6 @@ end
 draw = LottoDraw.new
 draw.parse_command_line(ARGV)
 results = draw.gettickets
-
+path = draw.point_path
+draw.generate_lotto_blog(path)
+draw.compile_blog(path)
