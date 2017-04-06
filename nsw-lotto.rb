@@ -159,11 +159,19 @@ class LottoDraw
         end
         main_pool_index += 1
       end
-      supp_result = rand(1..@supp_pool.length) if !@supp_pool.nil?
-      static_main(main_result)
-      static_supp(supp_result) if !@supp_pool.nil?
+      if !@supp_pool.nil?
+        supp_result = main_result[-1]
+        z = 0
+        while main_result.include?(supp_result)
+          z += 1
+          supp_result = rand(1..@supp_pool.length)
+          puts "#{main_result} + #{supp_result}" if !z.eql?(1) and @debug
+        end
+      end
       @draw_result += [main_result]
       @draw_result[-1] += ["Supplementary Number: #{supp_result}"] if !@supp_pool.nil?
+      static_main(main_result)
+      static_supp(supp_result) if !@supp_pool.nil?
     end
     @draw_result.each {|x| puts "draw result: #{x}"} if @debug
   end
@@ -172,6 +180,7 @@ class LottoDraw
     lotto_type_print
     init_static
     (1..@game).each { draw_numbers }
+    @draw_result.each { |x| puts "result: #{x}" } if @debug
   end
 
   def point_path
@@ -203,6 +212,6 @@ end
 
 draw = LottoDraw.new
 draw.parse_command_line(ARGV)
-results = draw.gettickets
+draw.gettickets
 path = draw.point_path
 draw.generate_lotto_blog(path)
