@@ -161,11 +161,8 @@ class LottoDraw
       end
       if !@supp_pool.nil?
         supp_result = main_result[-1]
-        z = 0
         while main_result.include?(supp_result)
-          z += 1
           supp_result = rand(1..@supp_pool.length)
-          puts "#{main_result} + #{supp_result}" if !z.eql?(1) and @debug
         end
       end
       @draw_result += [main_result]
@@ -182,36 +179,10 @@ class LottoDraw
     (1..@game).each { draw_numbers }
     @draw_result.each { |x| puts "result: #{x}" } if @debug
   end
-
-  def point_path
-    Dir.chdir("/opt/project/AULOTTO")
-    path = Dir.pwd
-    blog_path = File.join(File.dirname(path), "blog","_posts")
-    return blog_path
-  end
-  
-  def generate_lotto_blog(path)
-    file_name = "lotto_result"
-    file_time = Time.now.strftime "%Y-%m-%d"
-    file_ext = ".md"
-    file_full_name = file_time + "-" + file_name + file_ext
-    f = File.new("#{File.join(path, file_full_name)}", "w")
-    title = "---\nlayout: post\ntitle: '#{file_time}-#@lotto_type'\ndate: #{file_time}\ntag: lotto\n---\n\n"
-    f.puts title
-    f.puts "<br><br>This is NSW #@lotto_type Game.<br>\n"
-    @draw_result.each do |x| 
-      f.puts "<br>&emsp;&emsp;&emsp;Draw Result: Main Numbers: #{x}\n"
-    end
-    f.puts "<br><br> The script behind this is used to learn Ruby Scripting. <br>Gambling is not good for you and your love!\n<br>"
-    f.puts "<br>  Generate time: #{Time.now}"
-    f.puts "<br>"
-    f.close
-  end
 end
 
 
 draw = LottoDraw.new
 draw.parse_command_line(ARGV)
 draw.gettickets
-path = draw.point_path
-draw.generate_lotto_blog(path)
+
