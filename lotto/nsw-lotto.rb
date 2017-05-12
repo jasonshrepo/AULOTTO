@@ -18,7 +18,7 @@
 
 
 require 'optparse'
-require 'yaml'
+require 'erb'
 
 
 class LottoDraw
@@ -26,7 +26,6 @@ class LottoDraw
   def initialize
     @game = 1
     @playtype = 0
-    @method = 0
     @debug = false
     @pool_main = []
     @pool_supp = []
@@ -37,6 +36,8 @@ class LottoDraw
     @lotto_type = ""  
     @sts_main = Array.new(45,0)
     @sts_supp = Array.new
+    @path = File.dirname(__FILE__)
+    @date = Time.now.strftime("%Y-%m-%d-%H-%M-%S")
   end
 
   def parse_command_line(args)
@@ -50,11 +51,7 @@ class LottoDraw
       opts.on("-t", "--type number", "game type, 1:powerball, 2: ozlotto, else:monday/wednesday/saturday lotto" ) do |type|
         @playtype = type.to_i
       end
-  
-      opts.on("-m", "--method number", "method type, type 1: all number used, others: DEC method") do |method|
-        @method = method.to_i
-      end
-
+    
       opts.on("-d", "--debug", "debug mode") do |debug|
         @debug = true
       end
@@ -141,6 +138,20 @@ class LottoDraw
     puts "supp pool: #@supp_pool" if !@supp_pool.nil? and @debug
     puts "draw main: #@draw_main" if @debug
     puts "draw supp: #@draw_supp" if !@draw_supp.eql?(0) and @debug
+    pattern_filter = (0..@draw_pattern.length - 1).to_a
+    puts "#{pattern_filter}" if @debug
+    pattern_index = []
+    pattern_draw_number = 1
+    while pattern_draw_number < 7 do
+      pattern_index.push(pattern_filter.slice!(rand(0..(pattern_filter.length-1))))
+      pattern_draw_number += 1
+    end
+    puts "#{pattern_index}" if @debug
+    pattern_index.each do |x|
+      @draw_pattern[x] = nil
+    end
+    @draw_pattern.compact!
+    @draw_pattern *= 3
     puts "draw_pattern: #@draw_pattern" if @debug
     @draw_pattern.each do |pattern|
       main_result = []
@@ -161,11 +172,8 @@ class LottoDraw
       end
       if !@supp_pool.nil?
         supp_result = main_result[-1]
-        z = 0
         while main_result.include?(supp_result)
-          z += 1
           supp_result = rand(1..@supp_pool.length)
-          puts "#{main_result} + #{supp_result}" if !z.eql?(1) and @debug
         end
       end
       @draw_result += [main_result]
@@ -182,36 +190,29 @@ class LottoDraw
     (1..@game).each { draw_numbers }
     @draw_result.each { |x| puts "result: #{x}" } if @debug
   end
+ 
+  def load_html_file
+    puts "file path: #@path" if @debug
+    @file = File.read(File.join(@path, "index.html.erb"))
+  end
 
-  def point_path
-    Dir.chdir("/opt/project/AULOTTO")
-    path = Dir.pwd
-    blog_path = File.join(File.dirname(path), "blog","_posts")
-    return blog_path
+  def render
+    load_html_file
+    ERB.new(@file).result(binding)
   end
-  
-  def generate_lotto_blog(path)
-    file_name = "lotto_result"
-    file_time = Time.now.strftime "%Y-%m-%d"
-    file_ext = ".md"
-    file_full_name = file_time + "-" + file_name + file_ext
-    f = File.new("#{File.join(path, file_full_name)}", "w")
-    title = "---\nlayout: post\ntitle: '#{file_time}-#@lotto_type'\ndate: #{file_time}\ntag: lotto\n---\n\n"
-    f.puts title
-    f.puts "<br><br>This is NSW #@lotto_type Game.<br>\n"
-    @draw_result.each do |x| 
-      f.puts "<br>&emsp;&emsp;&emsp;Draw Result: Main Numbers: #{x}\n"
+
+  def output
+    %x(cp '#{File.join(@path, "site/index.html")}' '#{File.join(@path, "site/index-#@date.html")}') if File.exists?(File.join(@path, "site/index.html"))
+    @date = Time.now
+    File.open(File.join(@path, "site/index.html"), "w") do |f|
+      f.write(render)
     end
-    f.puts "<br><br> The script behind this is used to learn Ruby Scripting. <br>Gambling is not good for you and your love!\n<br>"
-    f.puts "<br>  Generate time: #{Time.now}"
-    f.puts "<br>"
-    f.close
   end
+   
 end
 
 
 draw = LottoDraw.new
 draw.parse_command_line(ARGV)
 draw.gettickets
-path = draw.point_path
-draw.generate_lotto_blog(path)
+draw.output
