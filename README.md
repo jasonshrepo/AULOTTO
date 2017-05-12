@@ -10,15 +10,13 @@ Usage: nsw-lotto [options]
     
     -t, --type number                game type, 1:powerball, 2:ozlotto, any number: monday/wednsday/saturday lotto
 
-    -m  --method number              method type, 1: all number used at least once, other: DEC method. default is 0
-
     -d, --debug                      debug mode  
     
 
 example:    
-ruby nsw-lotto.rb -t 1 -g 1 -m 1
+ruby nsw-lotto.rb -t 1 -g 1 -d
 
-results are export to local-file: lotto-result.txt
+results are generated into a html file. I am using nginx to host it, you can see the result at : lotto.52dayday.com.
 
 I am writing this script cause I want to combin the Ruby Learning with something interesting. 
 Gambling is not the purpose of this script and actually there is no secret algorithm for NSW lotto inside this script.
