@@ -13,9 +13,9 @@
 <body>
 <h1>This Is Predicting Result of NSW <%= @lotto_type %></h1>
 <p>The results are as following:</p>
-<p><% @draw_result.each do |result| %></p>
+<% @draw_result.each do |result| %>
 <p><%= result %></p>
-<p><% end %></p>
+<% end %>
 <p> reuslt is drawn automatically at <%= @date %></p>
 <p> The predicting reuslt will update 35 minutes before the close time of the day's lotto</p>
 <p><em>Thank you for visiting this website</em></p>

@@ -132,12 +132,15 @@ class LottoDraw
     case @playtype
     when 1 then @main_pool = [(1..14).to_a, (15..27).to_a, (28..40).to_a];@supp_pool = (1..20).to_a;@draw_main = 6;@draw_supp = 1;
     when 2 then @main_pool = [(1..15).to_a, (16..30).to_a, (31..45).to_a];@draw_main = 7;
-    else @main_pool = [(1..15).to_a, (16..30).to_a, (21..45).to_a];@draw_main = 6;end
+    else @main_pool = [(1..15).to_a, (16..30).to_a, (31..45).to_a];@draw_main = 6;end
     @playtype.eql?(2)?@draw_pattern=[[2,4,1], [1,2,4], [2,1,4], [3,3,1], [1,3,3], [3,1,3], [4,2,1], [1,4,2], [4,1,2]]:@draw_pattern=[[4,1,1],[1,4,1],[1,1,4],[2,3,1],[1,2,3],[2,1,3],[3,2,1],[1,3,2],[3,1,2]]
     puts "main pool: #@main_pool" if @debug
     puts "supp pool: #@supp_pool" if !@supp_pool.nil? and @debug
     puts "draw main: #@draw_main" if @debug
     puts "draw supp: #@draw_supp" if !@draw_supp.eql?(0) and @debug
+
+
+
     pattern_filter = (0..@draw_pattern.length - 1).to_a
     puts "#{pattern_filter}" if @debug
     pattern_index = []
@@ -152,24 +155,33 @@ class LottoDraw
     end
     @draw_pattern.compact!
     @draw_pattern *= 3
+
+
+
     puts "draw_pattern: #@draw_pattern" if @debug
     @draw_pattern.each do |pattern|
       main_result = []
       supp_result = 0
-      main_pool_index = 0
-      while main_pool_index < pattern.length
-        sub_main_pool = []
-        @main_pool[main_pool_index].each {|x| sub_main_pool += [x]}
+      pick_num_index = 0
+      sub_main_pool = Array.new
+      while pick_num_index < pattern.length
+        puts "main pool picked index: #{@main_pool[pick_num_index]}" if @debug
+        @main_pool[pick_num_index].each {|x| sub_main_pool.push(x)}
+        puts "sub main pool: #{sub_main_pool}" if @debug
         p = 0
-        while p < pattern[main_pool_index].to_i
+        while p < pattern[pick_num_index].to_i
           l = sub_main_pool.length
           rand_index = rand(1..(l-p))
           main_result += [sub_main_pool[(rand_index-1)].to_i]
           sub_main_pool[rand_index-1] = sub_main_pool[(l-p-1)]
           p += 1
         end
-        main_pool_index += 1
+        pick_num_index += 1
+        sub_main_pool = []
       end
+        main_result.sort!
+
+
       if !@supp_pool.nil?
         supp_result = main_result[-1]
         while main_result.include?(supp_result)
