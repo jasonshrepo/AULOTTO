@@ -33,6 +33,8 @@ class LottoDraw
     @draw_supp = 0
     @draw_pattern = []
     @draw_result = []
+    @main_num_check = Array.new
+    @supp_num_check = Array.new
     @lotto_type = ""  
     @sts_main = Array.new(45,0)
     @sts_supp = Array.new
@@ -127,8 +129,23 @@ class LottoDraw
     when 1 then @sts_main=Array.new(40,0);@sts_supp=Array.new(20,0);
     else @sts_main=Array.new(45,0) end
   end
-  
+
+  def sortNumberChance(number)
+    number.flatten!
+    result = Hash.new
+    i = 0
+    while i < number.length 
+      result["#{number[i]}"] = 0 if !result.has_key?("#{number[i]}") 
+      result["#{number[i]}"] += 1
+      i += 1
+    end
+    puts result if @debug
+    return result
+  end
+
   def draw_numbers
+    main_num_check = Array.new
+    supp_num_check = Array.new
     case @playtype
     when 1 then @main_pool = [(1..14).to_a, (15..27).to_a, (28..40).to_a];@supp_pool = (1..20).to_a;@draw_main = 6;@draw_supp = 1;
     when 2 then @main_pool = [(1..15).to_a, (16..30).to_a, (31..45).to_a];@draw_main = 7;
@@ -148,6 +165,7 @@ class LottoDraw
     while pattern_draw_number < 7 do
       pattern_index.push(pattern_filter.slice!(rand(0..(pattern_filter.length-1))))
       pattern_draw_number += 1
+      sleep 1
     end
     puts "#{pattern_index}" if @debug
     pattern_index.each do |x|
@@ -175,6 +193,7 @@ class LottoDraw
           main_result += [sub_main_pool[(rand_index-1)].to_i]
           sub_main_pool[rand_index-1] = sub_main_pool[(l-p-1)]
           p += 1
+          sleep 2
         end
         pick_num_index += 1
         sub_main_pool = []
@@ -189,11 +208,14 @@ class LottoDraw
         end
       end
       @draw_result += [main_result]
+      @main_num_check += [main_result]
+      @supp_num_check += [supp_result] if !@supp_pool.nil?
       @draw_result[-1] += ["Supplementary Number: #{supp_result}"] if !@supp_pool.nil?
       static_main(main_result)
       static_supp(supp_result) if !@supp_pool.nil?
     end
     @draw_result.each {|x| puts "draw result: #{x}"} if @debug
+    
   end
 
   def gettickets
@@ -203,9 +225,15 @@ class LottoDraw
     @draw_result.each { |x| puts "result: #{x}" } if @debug
   end
  
+  def getNumberOdds
+    @mainresult = sortNumberChance(@main_num_check) if !@main_num_check.empty?
+    @suppresult = sortNumberChance(@supp_num_check) if !@supp_num_check.empty?
+   
+  end
   def load_html_file
     puts "file path: #@path" if @debug
     @file = File.read(File.join(@path, "index.html.erb"))
+    puts @file if @debug
   end
 
   def render
@@ -227,4 +255,5 @@ end
 draw = LottoDraw.new
 draw.parse_command_line(ARGV)
 draw.gettickets
+draw.getNumberOdds
 draw.output
